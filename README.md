@@ -1,0 +1,1 @@
+Idea: Reimplement [IsaFoL Ordered Resolution Prover](https://bitbucket.org/isafol/isafol/src/master/Functional_Ordered_Resolution_Prover/) in Coq and use it via proof by reflection to prove actual Coq goals.

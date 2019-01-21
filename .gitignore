@@ -1,0 +1,8 @@
+*~
+*.vo
+*.glob
+*.aux
+.depend
+.lia.cache
+.nia.cache
+.coqdeps.d
