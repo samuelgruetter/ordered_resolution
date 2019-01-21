@@ -102,17 +102,13 @@ Inductive interp_term: fun_ctx -> var_ctx -> term -> forall {T: Type}, T -> Prop
 | interp_var: forall (Gf: fun_ctx) (Gv: var_ctx) x T v,
     Gv x T v ->
     interp_term Gf Gv (Var x) v
-| interp_fun: forall (Gf: fun_ctx) (Gv: var_ctx) name args (VS: Type) (vs: VS) (R: Type) f,
-    Gf name (VS -> R) f ->
-    interp_terms Gf Gv args vs ->
-    interp_term Gf Gv (Fun name args) (f vs)
-with interp_terms: fun_ctx -> var_ctx -> list term -> forall {T: Type}, T -> Prop :=
-| interp_nil: forall (Gf: fun_ctx) (Gv: var_ctx),
-    interp_terms Gf Gv nil tt
-| interp_cons: forall (Gf: fun_ctx) (Gv: var_ctx) t ts (V VS: Type) (v: V) (vs: VS),
-    interp_term Gf Gv t v ->
-    interp_terms Gf Gv ts vs ->
-    interp_terms Gf Gv (t :: ts) (v, vs).
+| interp_fun_nil: forall (Gf: fun_ctx) (Gv: var_ctx) name F f,
+    Gf name F f ->
+    interp_term Gf Gv (Fun name nil) f
+| interp_fun_cons: forall Gf Gv name arg args A R (t1: A -> R) (t2: A),
+    interp_term Gf Gv (Fun name args) t1 ->
+    interp_term Gf Gv arg t2 ->
+    interp_term Gf Gv (Fun name (arg :: args)) (t1 t2). (* argument order reads the wrong way *)
 
 Inductive interp_lit: fun_ctx -> var_ctx -> literal -> Prop -> Prop :=
 | interp_Pos: forall Gf Gv t P,
@@ -191,8 +187,8 @@ Theorem prover_sound: forall g, prover g = false -> goal_unsatisfiable g.
 Admitted.
 
 (* this goal does not hold, but that's how we'd prove goals *)
-Lemma test2: forall (P: (nat * (nat * unit)) -> Prop),
-    (forall a b c, ~ P (a, (b, tt)) \/ ~ P (b, (c, tt)) \/ P (a, (c, tt)) \/ False) ->
+Lemma test2: forall (P: nat -> nat -> Prop),
+    (forall a b c, ~ P a b \/ ~ P b c \/ P a c \/ False) ->
     False.
 Proof.
   eapply interp_goal_herbrand_sound.
@@ -211,29 +207,26 @@ Proof.
   eapply interp_done.
   repeat eapply interp_or.
   { eapply interp_Neg.
-    eapply interp_fun with (name := 0); cycle 1.
-    - eapply interp_cons.
+    eapply interp_fun_cons with (name := 0).
+    - eapply interp_fun_cons.
+      + eapply interp_fun_nil. cbv. apply Refl.
       + eapply interp_var with (x := 0). cbv. apply Refl.
-      + eapply interp_cons.
-        * eapply interp_var with (x := 1). cbv. apply Refl.
-        * eapply interp_nil.
-    - cbv. apply Refl. }
+    - eapply interp_var with (x := 1). cbv. apply Refl.
+  }
   { eapply interp_Neg.
-    eapply interp_fun with (name := 0); cycle 1.
-    - eapply interp_cons.
+    eapply interp_fun_cons with (name := 0).
+    - eapply interp_fun_cons.
+      + eapply interp_fun_nil. cbv. apply Refl.
       + eapply interp_var with (x := 1). cbv. apply Refl.
-      + eapply interp_cons.
-        * eapply interp_var with (x := 2). cbv. apply Refl.
-        * eapply interp_nil.
-    - cbv. apply Refl. }
+    - eapply interp_var with (x := 2). cbv. apply Refl.
+  }
   { eapply interp_Pos.
-    eapply interp_fun with (name := 0); cycle 1.
-    - eapply interp_cons.
+    eapply interp_fun_cons with (name := 0).
+    - eapply interp_fun_cons.
+      + eapply interp_fun_nil. cbv. apply Refl.
       + eapply interp_var with (x := 0). cbv. apply Refl.
-      + eapply interp_cons.
-        * eapply interp_var with (x := 2). cbv. apply Refl.
-        * eapply interp_nil.
-    - cbv. apply Refl. }
+    - eapply interp_var with (x := 2). cbv. apply Refl.
+  }
   { eapply interp_False. } }
 
   apply prover_sound.
