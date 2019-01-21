@@ -1,4 +1,5 @@
 Require Import Coq.Lists.List. Import ListNotations.
+Require Import Coq.Logic.Classical.
 
 Definition funname := nat.
 Definition varname := nat.
@@ -173,6 +174,45 @@ Inductive interp_goal': fun_ctx -> list clause -> Prop -> Prop :=
 
 Definition interp_goal: list clause -> Prop -> Prop := interp_goal' empty_ctx.
 
+(* Example: The clause (P \/ ~ P) holds in all models *)
+Lemma exmiddle_in_model: forall m, satisfies_clause m [Pos (Fun 0 []); Neg (Fun 0 [])].
+Proof.
+  intros. simpl.
+  destruct (classic (m (Fun 0 []))); auto.
+Qed.
+
+(* how can we conclude from this that this clause also is derivable in Coq's logic?
+   -> looks like the completeness theorem
+ *)
+
+
+(* could also call it completeness in the sense that Coq's logic is complete for
+   satisfies_clause *)
+Lemma interp_clause''_sound: forall Gf Gv c P,
+    interp_clause'' Gf Gv c P ->
+    (forall m, satisfies_clause m c) ->
+    P.
+Proof.
+  induction 1; intros; simpl in *.
+  - apply H. intro. apply True.
+  - destruct (classic (forall m : model, satisfies_clause m cs)) as [C | C].
+    + auto.
+    + (* ? *)
+Abort.
+
+(*
+Lemma interp_literal_sound: forall Gf Gv l P,
+    interp_lit Gf Gv l P ->
+    (forall m, satisfies_literal m l) ->
+    P.
+Proof.
+  intros. destruct H.
+  - simpl in *.
+
+Lemma interp_clause_grounding: forall Gf Gv c P,
+    interp_clause'' Gf Gv c P ->
+    forall gc, grounding_of_clause c gc
+*)
 
 Lemma interp_goal_herbrand_sound: forall g P,
     interp_goal g P ->
